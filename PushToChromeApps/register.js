@@ -1,7 +1,7 @@
 var registrationId = "";
 var hubName = "", connectionString = "";
 var originalUri = "", targetUri = "", endpoint = "", sasKeyName = "", sasKeyValue = "", sasToken = "";
-
+var hub = function () { };
 
 window.onload = function () {
   document.getElementById("registerWithGCM").onclick = registerWithGCM;
@@ -47,34 +47,35 @@ function registerCallback(regId) {
   chrome.storage.local.set({ registered: true });
 }
 
-function setUpSaSToken() {
+function setUp() {
+
   hubName = document.getElementById("hubName").value.trim();
   connectionString = document.getElementById("connectionString").value.trim();
   splitConnectionString();
   generateSaSToken();
+
+  hub = notificationHub({
+    hubDomainUri: originalUri,
+    log: updateLog
+  });
 }
 
 function registerWithNH() {
-  setUpSaSToken();
-
-  var hub = notificationHub({
-    hubDomainUri: originalUri,
-    log: updateLog
-  });
-
+  setUp();
   hub.register(registrationId);
-
 }
 
 function getRegistrationsFromNH() {
-  setUpSaSToken();
-
-  var hub = notificationHub({
-    hubDomainUri: originalUri,
-    log: updateLog
+  setUp();
+  var registrations = hub.getRegistrations({
+    callback: displayRegistrations
   });
+}
 
-  hub.getRegistrations();
+function displayRegistrations(registrationsXml) { 
+  updateLog(registrationsXml);
+
+  //todo: read xml and display data in a format
 }
 
 
@@ -120,3 +121,25 @@ function generateSaSToken() {
     + base64UriEncoded + "&se=" + expires + "&skn=" + sasKeyName;
 }
 
+function parseXmlString(xmlStr, callback) {
+
+  var parseXml;
+
+  if (typeof window.DOMParser != "undefined") {
+    parseXml = function (xmlStr) {
+      return (new window.DOMParser()).parseFromString(xmlStr, "text/xml");
+    };
+  } else if (typeof window.ActiveXObject != "undefined" &&
+    new window.ActiveXObject("Microsoft.XMLDOM")) {
+    parseXml = function (xmlStr) {
+      var xmlDoc = new window.ActiveXObject("Microsoft.XMLDOM");
+      xmlDoc.async = "false";
+      xmlDoc.loadXML(xmlStr);
+      return xmlDoc;
+    };
+  } else {
+    throw new Error("No XML parser found");
+  }
+
+  callback(parseXml());
+}

@@ -5,7 +5,7 @@ function notificationHub(dataObj) {
     var _apiVersion = "2014-09";
 
     function register(GCMRegistrationId) {
-        
+
         var registrationId = GCMRegistrationId;
         var registrationPayload =
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
@@ -28,8 +28,8 @@ function notificationHub(dataObj) {
         client.onload = function () {
             if (client.readyState == 4) {
                 if (client.status == 200) {
-                    _log("Notification Hub Registration succesful!");
-                    _log(client.responseText);
+                    _log("Notification Hub Registration successful!");
+                    return client.responseText;
                 } else {
                     _log("Notification Hub Registration did not succeed!");
                     _log("HTTP Status: " + client.status + " : " + client.statusText);
@@ -55,44 +55,46 @@ function notificationHub(dataObj) {
         }
     }
 
-function getRegistrations() {
+    function getRegistrations(params) {
+       var _params = params;
 
-  var url = _hubDomainUri + "/registrations/?api-version=" + _apiVersion;
-  var client = new XMLHttpRequest();
+        var url = _hubDomainUri + "/registrations/?api-version=" + _apiVersion;
+        var client = new XMLHttpRequest();
 
-  client.onload = function () {
-    if (client.readyState == 4) {
-      if (client.status == 200) {
-        _log("Retrieved Notification Hub Registrations succesfully!");
-        _log(client.responseText);
-      } else {
-        _log("Retrieved Notification Hub Registrations did not succeed!");
-        _log("HTTP Status: " + client.status + " : " + client.statusText);
-        _log("HTTP Response: " + "\n" + client.responseText);
-      }
+        client.onload = function () {
+            if (client.readyState == 4) {
+                if (client.status == 200) {
+                    _log("Retrieved Notification Hub Registrations successfully!");
+                    _params.callback(client.responseText);
+                } else {
+                    _log("Retrieved Notification Hub Registrations did not succeed!");
+                    _log("HTTP Status: " + client.status + " : " + client.statusText);
+                    _log("HTTP Response: " + "\n" + client.responseText);
+                }
+            }
+        };
+
+        client.onerror = function () {
+            _log("ERROR - Retrieved Notification Hub Registrations did not succeed!");
+        }
+
+        client.open("GET", url, true);
+        client.setRequestHeader("Content-Type", "application/atom+xml;type=entry;charset=utf-8");
+        client.setRequestHeader("Authorization", sasToken);
+        client.setRequestHeader("x-ms-version", "2014-09");
+
+        try {
+            client.send();
+        }
+        catch (err) {
+            _log(err.message);
+        }
+
     }
-  };
-
-  client.onerror = function () {
-    _log("ERROR - Retrieved Notification Hub Registrations did not succeed!");
-  }
-
-  client.open("GET", url, true);
-  client.setRequestHeader("Content-Type", "application/atom+xml;type=entry;charset=utf-8");
-  client.setRequestHeader("Authorization", sasToken);
-  client.setRequestHeader("x-ms-version", "2014-09");
-
-  try {
-    client.send();
-  }
-  catch (err) {
-    _log(err.message);
-  }
-}
 
     return {
         register: register,
-        getRegistrations : getRegistration
+        getRegistrations: getRegistrations
     };
 
 };
