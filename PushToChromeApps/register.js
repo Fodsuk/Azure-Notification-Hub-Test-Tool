@@ -55,19 +55,26 @@ function setUpSaSToken() {
 }
 
 function registerWithNH() {
-
-  var nh = notificationHub({
-     hubDomainUri = originalUri,
-     log = updateLog
-  })
-
   setUpSaSToken();
-  sendNHRegistrationRequest();
+
+  var hub = notificationHub({
+    hubDomainUri: originalUri,
+    log: updateLog
+  });
+
+  hub.register(registrationId);
+
 }
 
 function getRegistrationsFromNH() {
   setUpSaSToken();
-  getNHRegistrationsRequest();
+
+  var hub = notificationHub({
+    hubDomainUri: originalUri,
+    log: updateLog
+  });
+
+  hub.getRegistrations();
 }
 
 
@@ -113,93 +120,3 @@ function generateSaSToken() {
     + base64UriEncoded + "&se=" + expires + "&skn=" + sasKeyName;
 }
 
-function sendNHRegistrationRequest() {
-
-  var hubProperties = {
-    hubDomainUri: originalUri,
-    log: updateLog
-  };
-
-  var nh = notificationHub(hubProperties);
-  nh.register(registrationId);
-
-  return;
-
-  var registrationPayload =
-    "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
-    "<entry xmlns=\"http://www.w3.org/2005/Atom\">" +
-    "<content type=\"application/xml\">" +
-    "<GcmRegistrationDescription xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://schemas.microsoft.com/netservices/2010/10/servicebus/connect\">" +
-    "<GcmRegistrationId>{GCMRegistrationId}</GcmRegistrationId>" +
-    "</GcmRegistrationDescription>" +
-    "</content>" +
-    "</entry>";
-
-  registrationPayload = registrationPayload.replace("{GCMRegistrationId}", registrationId);
-
-  var url = originalUri + "/registrations/?api-version=2014-09";
-  var client = new XMLHttpRequest();
-
-  client.onload = function () {
-    if (client.readyState == 4) {
-      if (client.status == 200) {
-        updateLog("Notification Hub Registration succesful!");
-        updateLog(client.responseText);
-      } else {
-        updateLog("Notification Hub Registration did not succeed!");
-        updateLog("HTTP Status: " + client.status + " : " + client.statusText);
-        updateLog("HTTP Response: " + "\n" + client.responseText);
-      }
-    }
-  };
-
-  client.onerror = function () {
-    updateLog("ERROR - Notification Hub Registration did not succeed!");
-  }
-
-  client.open("POST", url, true);
-  client.setRequestHeader("Content-Type", "application/atom+xml;type=entry;charset=utf-8");
-  client.setRequestHeader("Authorization", sasToken);
-  client.setRequestHeader("x-ms-version", "2014-09");
-
-  try {
-    client.send(registrationPayload);
-  }
-  catch (err) {
-    updateLog(err.message);
-  }
-}
-
-function getNHRegistrationsRequest() {
-  var url = originalUri + "/registrations/?api-version=2014-09";
-  var client = new XMLHttpRequest();
-
-  client.onload = function () {
-    if (client.readyState == 4) {
-      if (client.status == 200) {
-        updateLog("Retrieved Notification Hub Registrations succesfully!");
-        updateLog(client.responseText);
-      } else {
-        updateLog("Retrieved Notification Hub Registrations did not succeed!");
-        updateLog("HTTP Status: " + client.status + " : " + client.statusText);
-        updateLog("HTTP Response: " + "\n" + client.responseText);
-      }
-    }
-  };
-
-  client.onerror = function () {
-    updateLog("ERROR - Retrieved Notification Hub Registrations did not succeed!");
-  }
-
-  client.open("GET", url, true);
-  client.setRequestHeader("Content-Type", "application/atom+xml;type=entry;charset=utf-8");
-  client.setRequestHeader("Authorization", sasToken);
-  client.setRequestHeader("x-ms-version", "2014-09");
-
-  try {
-    client.send();
-  }
-  catch (err) {
-    updateLog(err.message);
-  }
-}

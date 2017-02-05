@@ -2,6 +2,7 @@ function notificationHub(dataObj) {
 
     var _hubDomainUri = dataObj.hubDomainUri;
     var _log = dataObj.log;
+    var _apiVersion = "2014-09";
 
     function register(GCMRegistrationId) {
         
@@ -18,7 +19,7 @@ function notificationHub(dataObj) {
 
         registrationPayload = registrationPayload.replace("{GCMRegistrationId}", registrationId);
 
-        var url = _hubDomainUri + "/registrations/?api-version=2014-09";
+        var url = _hubDomainUri + "/registrations/?api-version=" + _apiVersion;
         var client = new XMLHttpRequest();
 
         _log(registrationPayload);
@@ -54,8 +55,44 @@ function notificationHub(dataObj) {
         }
     }
 
+function getRegistrations() {
+
+  var url = _hubDomainUri + "/registrations/?api-version=" + _apiVersion;
+  var client = new XMLHttpRequest();
+
+  client.onload = function () {
+    if (client.readyState == 4) {
+      if (client.status == 200) {
+        _log("Retrieved Notification Hub Registrations succesfully!");
+        _log(client.responseText);
+      } else {
+        _log("Retrieved Notification Hub Registrations did not succeed!");
+        _log("HTTP Status: " + client.status + " : " + client.statusText);
+        _log("HTTP Response: " + "\n" + client.responseText);
+      }
+    }
+  };
+
+  client.onerror = function () {
+    _log("ERROR - Retrieved Notification Hub Registrations did not succeed!");
+  }
+
+  client.open("GET", url, true);
+  client.setRequestHeader("Content-Type", "application/atom+xml;type=entry;charset=utf-8");
+  client.setRequestHeader("Authorization", sasToken);
+  client.setRequestHeader("x-ms-version", "2014-09");
+
+  try {
+    client.send();
+  }
+  catch (err) {
+    _log(err.message);
+  }
+}
+
     return {
-        register: register
+        register: register,
+        getRegistrations : getRegistration
     };
 
 };
